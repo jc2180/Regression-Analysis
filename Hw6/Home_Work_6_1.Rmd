@@ -1,0 +1,259 @@
+---
+title: "Homework 6_1"
+author: "Jyoti Chaudhary"
+date: "March 22, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(leaps)
+library(MASS)
+
+```
+
+#Solution 1.a
+
+
+```{r }
+# Fitting the MLR model using LM function
+
+data_B15 <- read.csv(paste(getwd(),"/data_table_B15.csv",sep = ""),header=T)
+
+colnames(data_B15) <- c('x6','y', 'x1', 'x2', 'x3', 'x4', 'x5')
+
+data_B15_fit <- lm(formula = data_B15$y ~ data_B15$x1 + data_B15$x2 + data_B15$x3 + data_B15$x4 + data_B15$x5, data = data_B15)
+
+summary(data_B15_fit)
+
+```
+
+The MLR equation from above R output is:
+
+y-hat = 996 + 1.41 * x1 - 14.8 * x2 + 3.2 * x3 - 0.10 * x4 + 0.3552 * x5
+
+where 
+
+City = x6
+Mort = y
+PRECIP = x1
+EDUC = x2
+Nonwhite = x3
+NOX = x4
+SO2 = x5
+
+
+# Solution (1.b)
+
+H0: beta1 = beta2 = beta3 = beta4 = beta5 = 0 vs. H1: at least one of 5 is non-zero. 
+
+From above, it can be seen that F-statistic: 22.39 with p-value approximately equals 0.000. So, we reject the null hypothesis
+
+So, the data provides sufficient evidence to support the fact that the regression model is significant. 
+
+
+# Solution (1.c)
+Use t tests to assess the contribution of each regressor to the model. Discuss your findings.
+
+From above model fit summary statistics, it can be seen that beta4 = NOX has a high p-value of approx = 0.43. Beta4 is barely significant at 5% level but not for any alpha < 0.427. All other predictors have very low p-value, hence all other predictors are significant for smaller values of alpha.
+
+PRECIP (x1), EDUC(x2), NONWHITE(x3) and SO2(x5) contribute to the model.
+
+
+# solution (1.d)
+Find a 95% CI for the regression coefficient for SO2.
+
+```{r }
+confint(data_B15_fit, "data_B15$x5", level = 0.95)
+
+```
+
+From above output, the 95% C.I for SO2 is (0.1728, 0.5375)
+
+# solution (1.e)
+Run all possible models and choose the best one with justifications.
+
+```{r }
+
+fit_all =regsubsets(y ~  x1 + x2 + x3 + x4 + x5, data=data_B15, nbest=10,really.big=T, intercept=T)
+
+
+model_fit_all =summary(fit_all)[[1]]
+RSQ =summary(fit_all)[[2]]
+SSE=summary(fit_all)[[3]]
+ADJR2 =summary(fit_all)[[4]]
+Cp=summary(fit_all)[[5]]
+BIC=summary(fit_all)[[6]]
+
+fit_satistics =cbind(model_fit_all,RSQ,SSE,ADJR2,Cp,BIC)
+fit_satistics
+
+```
+
+We can see from above result that the model that excludes NOX is the best model:
+
+MORT (y) ~ PRECIP (x1) + EDUC(x2) + NONWHITE(x3) + SO2(x5)
+
+This is based on this model's highest Cp value, highest Adjusted R-square and lowest BIC value. 
+
+As we had determined in solution (1.c), we predictor x4(NOX) is not a significant parameter, hence removing this predictor resulted in a better model fit.
+
+
+#Solution (1.f)
+Run forward, backward and stepwise regression on the data.
+
+```{r }
+fit1 <- lm(y ~  x1 + x2 + x3 + x4 + x5, data=data_B15)
+
+# forward selection
+step(lm(y ~ 1, data=data_B15), scope=list(lower=~1, upper=fit1), direction='forward')
+
+```
+
+The above output shows the best model as per Forward selection. The best model with lowest AIC value (437.99) is:
+
+y ~ x3 + x2 + x5 + x1
+
+
+```{r }
+
+# Backward Selection
+step(lm(y ~ x1 + x2 + x3 + x4 + x5, data=data_B15), scope=list(lower=~1, upper=fit1), direction='backward', trace=FALSE)
+
+```
+
+The above output shows the best model as per Backward selection. (Trace=FALSE removes the other models from the output and only display the best model)
+
+
+```{r }
+
+# stepwise selection
+
+step(lm(y ~ x1 + x2 + x3 + x4 + x5, data=data_B15), scope=list(lower=~1, upper=fit1), direction='both', trace=FALSE)
+
+```
+
+Same model is selected as the best model from Forward, Backward and Stepwise selection.
+
+```{r }
+
+# Mallow's Cp criteria for model selection
+
+leaps(x=data_B15[,3:7], y=data_B15[,2], names=names(data_B15[,3:7]), method="Cp")
+
+```
+
+
+As per above ouput, the best model is "4  TRUE  TRUE  TRUE FALSE  TRUE" which is the following model:
+y ~ x1 + x2 + x3 + x5
+This is the same model as chosen by all the above selection methods. 
+
+```{r }
+# Ajusted R-square criteria for model selection
+leaps(x=data_B15[,3:7], y=data_B15[,2], names=names(data_B15[,3:7]), method="adjr2")
+
+```
+
+The model with highest Adjusted R-square value is the best model. Again the highest R-square value (0.64676207) is for model "4  TRUE  TRUE  TRUE FALSE  TRUE" which is actually (y ~ x1 + x2 + x3 + x5) model.
+
+# Solution (1.g)
+Do all 3 procedures picked the same model? If yes: Should it happen all the time, If NO: Why
+don't they pick the same?
+
+Yes, all 3 procedures picked the same model - 
+MORT (y) ~ PRECIP (x1) + EDUC(x2) + NONWHITE(x3) + SO2(x5)
+
+But it does not happen all the time. These 3 methods can pick different models based on various criteria. In this particular case, NOX is a weak parameter and its P-value is lesser at all steps in all three methods. 
+In case of another dataset, the P-value of a variable may vary at different steps and can result in different model selection.
+
+
+# solution (1.h)
+Perform the residual analysis of your final model and provide the final estimated model
+
+
+```{r}
+
+fit2 <- lm(y ~ x1 + x2 + x3 + x5, data=data_B15)
+
+#e. Residual analysis
+e=residuals(fit2) 			## RESIDUAL
+std_e=stdres(fit2)	## STANDARDIZED RESIDUAL
+std_e
+
+```
+
+From above, none of the standardized residuals are greater than 3 therefore none of them are outliers.
+
+```{r}
+
+r=studres(fit2)   			## STUDENTIZED RESIDUAL 
+max(abs(r))
+
+```
+
+The studentized residuals also don't show any outlier. However the 50th and 60th point have values greater than 2.5 and hence these points need closer analysis.
+
+```{r}
+
+# Influence analysis
+
+## COOKS DISTANCE 
+cd=cooks.distance(fit2) 
+cd
+plot(cd,main="plot of cook's distance")
+
+```
+
+
+There is no point which has Cook's distance greater than 2. Therefore, as per cook's distance, no point unduly impacts the regression coefficients.
+
+```{r}
+## DFFITS 
+dfts=dffits(fit2) 
+dfts
+plot(dfts,main="plot of dffits")
+
+#threshold value
+# 2*square-root(p/n) = 0.52  (p = 4, n = 60)
+
+```
+
+The 50th and 60th point have a dffits value greater than the cutoff value of 0.52. Therefore according to this analysis, these 2 data points unduly impact the parameter estimation.
+
+```{r}
+
+
+# removing data points - 50th and 60th and see if there is improvement in model fit
+
+data1 <- data_B15[-c(1,6)]
+
+data2 <- data1[-50,]
+data3 <- data2[-59,]
+
+fit_subset <- lm(y ~ ., data = data3)
+
+summary(fit2)
+summary(fit_subset)
+
+```
+
+Removal of 50th and 60th data point has resulted in decrease in Residual standard error and increase in Adjusted R-square. Hence these data points should be excluded to attain better model fitting.
+
+```{r}
+# Normality plot of residuals
+
+qqnorm(fit_subset$residuals)
+qqline(fit_subset$residuals)
+
+```
+
+The normal probability plot shows that the residuals are much more closer to a normal distribution and there is no departure from the straight line towards the tails. This indicates that errors are IID normal.
+
+```{r}
+# residual vs fitted plot
+
+plot(y=fit_subset$residuals,x=fit_subset$fit,xlab="fitted values",ylab="residuals",main="residual vs fitted")
+
+```
+
+There does not appear to be any strong pattern to the residuals, and they all appear to lie randomly in a horizontal band, so this plot supports the assumption that the errors are independently, identically distributed. The plot does not indicate any outliers.

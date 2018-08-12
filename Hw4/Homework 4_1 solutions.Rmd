@@ -1,0 +1,122 @@
+---
+title: "Homework 4_1"
+author: "Jyoti Chaudhary"
+date: "February 24, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(sas7bdat)
+```
+
+#Solution 1.a
+
+
+```{r }
+# Fitting the MLR model using LM function
+
+xr16054 <- read.csv(paste(getwd(),"/xr16054.csv",sep = ""),header=T)
+
+xr16054_fit <- lm(formula = xr16054$Salary ~ xr16054$GPA + xr16054$Activities, data = xr16054)
+
+summary(xr16054_fit)
+
+
+```
+
+The MLR equation from above R output is:
+
+Y-hat = 24.3092 + 3.8416 * X1 +  1.6810 * X2
+
+where 
+Beta0 = 24.3092
+Beta1 = 3.8416
+Beta2 = 1.6810
+
+X1 = GPA
+X2 = Activities
+Y-hat = Predicted Salary
+
+Interpretation of regression Coefficients:
+a. For a unit increase in GPA and a constant Activities, the starting salary will increase by 3.8416 units.
+b. For a unit increase in number of Activities with constant age, the starting salary will increase by 1.6810 units. 
+c. As per the regression equation, if GPA is zero and number of activities is zero, the starting salary equals 24.3092. This interpretation is invalid as the parameter values in this case are outside the range of test data.
+
+# Solution (1.b)
+
+For X1 = 3.6 and X2 = 3, the estimated salary will be:
+
+Y-predicted = 24.3092 + 3.8416 * 3.6 +  1.6810 * 3 = 43.18196
+
+#Hence, Dave's estimated starting salary = 43.18196
+
+
+# Solution (1.c)
+
+```{r }
+
+# Below is the code to calculate SSE = e'e where e = (y - y-hat) = Observed y minus predicted y
+
+# code to prepare a 10 by 1 matrix for regressor GPA and ACTIVITIES
+matrix_X1 <- matrix(xr16054$GPA)
+matrix_X2 <- matrix(xr16054$Activities)
+# Code to prepare a 10 by 1 matrix
+matrix_Beta0 <- matrix(rep(1,length(xr16054$Activities))) 
+# code to combine columns of all the above matrices
+X <- cbind(matrix_Beta0, matrix_X1, matrix_X2) 
+# Matrix for the response variable
+Y <- matrix(xr16054$Salary)
+
+Beta_hat <- solve(t(X)%*%X)%*%(t(X)%*%Y) 
+
+# As e = y - (X * Beta-hat)
+e <- Y -(X%*%Beta_hat)
+# SSE = e'e
+sse <- t(e) %*% (e)
+
+# Standard Error = sqrt(SSE / n - (k + 1))
+SE <- sqrt(sse/(10-(2+1)))
+SE
+
+```
+
+From above output, it can be seen that Standard Error for the model = 1.448. This value can also be found from R output: "Residual standard error: 1.448" 
+
+
+#Solution 3.a
+
+
+```{r }
+
+# Fitting the MLR model
+
+StreetVN <- read.sas7bdat(paste(getwd(),"/STREETVN.sas7bdat",sep = ""))
+
+StreetVN_fit <- lm(formula = StreetVN$earnings ~ StreetVN$age + StreetVN$hours, data = StreetVN)
+
+summary(StreetVN_fit)
+
+
+```
+
+# Solution 3.c
+From above model fit summary output, the regression equations =
+
+Y-hat = -20.352 + 13.350 * X1 + 243.714 * X2
+where 
+Beta0 = -20.352
+Beta1 = 13.350
+Beta2 = 243.714
+
+X1 = Age
+X2 = Hours
+Y-hat = Predicted Earnings
+
+Interpretation of regression Coefficients:
+a. For a unit increase in age, keeping all other regressors constant, the Earnings of Street Vendors increase by a factor of 13.350
+
+b. For a unit increase in hours worked per day, keeping all other regressors constant, the Earnings of Street Vendors increase by a factor of 243.714
+
+c. for age = zero and hours worked per day equals zero, the estimated earnings will be -20.352. This interpretation has no practical significance since the age and hours worked per day are outside the range of test data used for model fitting and is not even practically feasible as age and hours worked cannot be zero.
+

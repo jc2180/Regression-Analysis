@@ -1,0 +1,121 @@
+---
+title: "Homework7"
+author: "Jyoti Chaudhary"
+date: "April 8, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(reshape2) 
+
+```
+
+#Problem 1
+This is the case of two way Anova without interaction. Here Factor A = portfolio and Factor B = Advisor.
+k = 3, b = 4.
+
+```{r }
+data2 <- read.csv(paste(getwd(),"/XR12095.csv",sep = ""),header=T)
+
+  
+library(reshape2) 
+data3 <- melt(data2)
+data3
+
+mdl1 <- aov(value ~ Advisor + variable, data = data3) 
+
+# Now lets compare the portfolios
+TukeyHSD(mdl1, conf.level = 0.95, "variable")
+plot(TukeyHSD(mdl1,"variable"))
+
+```
+
+From the output p-values and the plot, we can determine that there is no signficant difference between portfolios at 5% level. 
+
+
+```{r }
+
+with(data3, pairwise.t.test(x=value, g=variable, p.adjust="none")) ## FISHER'S LSD 
+
+```
+
+
+None of the portfolio comparisons are statistically significant. Hence we conclude that there is no significant difference between the expected annual rate of return between portfolios at 5% level. 
+
+
+# Problem 2:
+
+This is one-way anova test. 
+
+```{r }
+data1 <- read.csv(paste(getwd(),"/XR12096.csv",sep = ""),header=T)
+
+Stacked_data1 <- stack(data1)
+
+mdl2 <- aov(values ~ ind, data = Stacked_data1) 
+
+```
+
+Lets compare the brands using 0.025 level.
+
+```{r }
+
+TukeyHSD(mdl2, conf.level = 0.975, "ind")
+
+```
+
+Looking at the p-value, we can further determine that at 0.025 level, there is no statistically significant difference between the breaking strength of different brand types.
+
+```{r }
+
+with(Stacked_data1, pairwise.t.test(x=values, g=ind, p.adjust="none")) ## FISHER'S LSD 
+
+```
+
+Except for brandD-brandA, none of the other portfolio comparisons are statistically significant. For brandD-brandA, there is statistically significant difference between the breaking strength. For all other brand comparisons, we conclude that there is no significant difference between the breaking strength at 2.5% level. 
+
+# Problem 3:
+
+```{r }
+data4 <- read.csv(paste(getwd(),"/XR12099.csv",sep = ""),header=T)
+
+data5 <- melt(data4)
+
+mdl3 <- aov(value ~ Style * variable, data = data5)
+
+summary(mdl3)
+
+TukeyHSD(mdl3,"Style")
+
+```
+
+Using 0.05 level of significance, we can conclude that Type style 1 and type style 2 has no significant difference in the effect on publication readability. 
+
+```{r }
+
+TukeyHSD(mdl3,"variable")
+
+```
+Using 0.05 level of significance, we can conclude that Only medium and light darkness levels have statistically significant difference in the effect on publication readability. 
+
+```{r }
+
+TukeyHSD(mdl3,"Style:variable")
+
+```
+Using 0.05 level of significance, we can conclude that the interaction effect of style type and darkness level do not have statistically significant difference in the effect on publication readability.
+
+# Problem 4
+
+```{r }
+
+data6 <- read.csv(paste(getwd(),"/LtnSqr.csv",sep = ""),header=T)
+
+mdl4 <- aov(Yield ~ Peanuts + Column + Row, data = data6)
+
+
+TukeyHSD(mdl4,"Peanuts")
+
+```
+Using 0.05 level of significance, we can conclude that the comparison in difference of yield of various peanuts varities is not statistically significant.

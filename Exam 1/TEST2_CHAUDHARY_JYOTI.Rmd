@@ -1,0 +1,97 @@
+---
+title: "Exam 2"
+author: "Jyoti Chaudhary"
+date: "March 30, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(leaps)
+
+
+```
+
+
+```{r }
+library(mixlm)
+
+data1 <- read.csv(paste(getwd(),"/Test2_Data_xr17049.csv",sep = ""),header=T)
+
+full=lm(y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 , data=data1)
+
+forward(full, alpha = 0.1, full = TRUE)
+
+
+```
+
+
+```{r }
+
+
+
+
+backward(full, alpha = 0.10, full = TRUE, hierarchy = TRUE)
+
+
+```
+
+
+
+```{r }
+stepWise(full, alpha.enter = 0.1, alpha.remove = 0.1, full = TRUE)
+
+
+```
+
+The final model is y ~ x5 + x2 + x9.
+
+a) If alpha is changed to 0.05 then x9 will still be added to the model as p-value for x9 = 0.04395 which is less than 0.05.
+
+
+```{r }
+
+final_fit <- lm(y ~ x5 + x2 + x9, data=data1)
+  
+#PRESS Residuals
+pr <- resid(final_fit)/(1 - lm.influence(final_fit)$hat)
+pr_st<-sum(pr^2)
+an<-anova(final_fit)
+SST<-sum(an$`Sum Sq`)
+
+R2_pred=1-(pr_st/SST)
+R2_pred
+
+AIC(final_fit)
+
+```
+
+b) R2_pred is 0.1384949.
+AIC = 402.3461
+
+
+
+```{r }
+
+library(leaps)
+
+tmp =regsubsets(y ~ x5 + x2 + x9, data=data1 ,nbest=10,really.big=T, intercept=T)
+names(summary(tmp))
+
+almdl=summary(tmp)[[1]]
+SSE=summary(tmp)[[3]]
+adjR2=summary(tmp)[[4]]
+Cp=summary(tmp)[[5]]
+BIC=summary(tmp)[[6]]
+
+fnl=cbind(almdl,SSE,adjR2,Cp,BIC)
+fnl
+
+
+
+```
+
+
+
+
+

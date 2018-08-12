@@ -1,0 +1,186 @@
+---
+title: "Homework8"
+author: "Jyoti Chaudhary"
+date: "April 16, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+#Problem 1.a
+Fit a logistic regression model to the response variable y.
+
+```{r }
+data1 <- read.csv(paste(getwd(),"/Data_HW_8_1.csv",sep = ""),header=T)
+
+mdl1= glm ( y ~ x, data = data1, family = binomial)
+
+summary(mdl1) ##### PARAMETER ESTIMATES 
+
+# The coefficients obtained are:
+
+mdl1$coefficients
+
+
+```
+
+The fitted model is:
+
+$$\hat {y} = \hat {\pi} = \frac {1}{1+e^{-(6.07 - 0.0177x)}} = \frac {1}{1+e^{-6.07 + 0.0177x}}$$ 
+
+#(1.b)
+Does the model deviance indicate that the logistic regression model from part a is adequate?
+
+```{r }
+
+anova(mdl1, test="Chisq")
+
+```
+
+The Deviance = 20.364 with df = 23. As D/df = 0.8 which is close to 1.00, this indicates that the model is adequate and good fit for the data. Also, the p-value (=0.0001597) is very low which further indicates that model is adequate.
+
+#(1.c) 
+Provide an interpretation of the parameter beta1 in this model.
+
+```{r }
+OR=exp(coef(mdl1)[2])
+OR
+```
+
+This odds ratio implies that for every unit increase in speed, the odds of hitting the target decrease by 1.75%.
+
+#(1.d)
+Expand the linear predictor to include a quadratic term in target speed. Is there any evidence
+that this quadratic term is required in the model?
+```{r }
+
+mdl2= glm ( y ~ x + x^2, data = data1, family = binomial)
+
+anova(mdl1, test="Chisq")
+
+```
+
+There is no difference in the deviance of the two models and hence there is no need for the quadratic term.
+
+
+#(2.a)
+Fit a logistic regression model to the data.
+
+```{r }
+
+data2 <- read.csv(paste(getwd(),"/Data_HW_8_2.csv",sep = ""),header=T)
+
+mdl3= glm ( y ~ x1 + x2, data = data2, family = binomial)
+
+summary(mdl3) ##### PARAMETER ESTIMATES 
+
+# The coefficients obtained are:
+
+mdl3$coefficients
+
+
+```
+
+The fitted model is:
+
+$$\hat {y} = \hat {\pi} = \frac {1}{1+e^{-(-7.047 + 7.382e-05x1 + 0.9879x2)}} = \frac {1}{1+e^{7.047 - 7.382e-05x1 - 0.9879x2}}$$ 
+
+
+```
+
+#(2.b)
+Does the model deviance indicate that the logistic regression model from part a is adequate?
+
+```{r }
+
+anova(mdl3, test="Chisq")
+
+```
+
+The Deviance = 21.08 with df = 17. As D/df = 1.24 which is greater than 1.00, this indicates that the model fits the data, however model fit can be improved by further analysis.Also, the p-value (=0.01506) is low which further indicates that model is adequate.
+
+
+#(2.c) 
+Interpret the model coefficients beta1 and beta2.
+
+```{r }
+
+OR=exp(coef(mdl3))
+OR
+```
+
+The above odds ratio implies that: 
+
+- For a unit increase in the income, the odds of purchasing a new vehicle increase by 0.0074%. 
+- For a unit increase in the age of family's oldest vehicle, the odds of purchasing a new vehicle increase by 268.5% which implies the odds are more than approx 2.5 times.
+
+#(2.d)
+What is the estimated probability that a family with an income of $45,000 and a car that is 5
+years old will purchase a new vehicle in the next 6 months?
+
+```{r }
+
+pred2=subset(data.frame(data2,predict(mdl3, se.fit=TRUE, type='response')),select = -c(residual.scale))
+
+nwdt=with(pred2, data.frame(x1=45000,x2=5))  # NEW DATA POINT
+nwdt
+
+pct=0.95
+
+nwdt2=subset(cbind(nwdt,predict(mdl3,newdata=nwdt, type="link", se=TRUE)),select = -c(residual.scale))
+nwdt2
+
+nwdt3=within(nwdt2,{PredictedProb <- plogis(fit)
+LL <- plogis(fit - (qnorm((1+pct)/2) * se.fit))
+UL <- plogis(fit + (qnorm((1+pct)/2) * se.fit))})
+nwdt3
+
+```
+
+We can see from the above result that the predicted probability is 0.77 of purchasing a new vehicle.
+
+#(2.e)
+Expand the linear predictor to include an interaction term. Is there any evidence that this term
+is required in the model?
+
+
+```{r }
+
+mdl4= glm ( y ~ x1*x2, data = data2, family = binomial)
+
+summary(mdl4) ##### PARAMETER ESTIMATES 
+
+anova(mdl4, test="Chisq")
+
+```
+
+The deviance has significantly reduced due to interaction term with a p-value of 0.033. As D/df = 1.03, this indicates that the model is adequate and good fit for the data. Hence its evident that the interaction term is required in the model. 
+
+
+#(2.f)
+If income goes up by $1000 in model of part (a) while age remain fixed, how much the odds of buying change.
+
+```{r }
+
+OR=exp(coef(mdl3)[2])
+OR
+
+```
+
+From the odds ratio we can determine that if the income goes up by $1000, the odds of purchasing a new vehicle increase by 7.4%.
+
+#(2.g)
+
+Find approximate 95% confidence intervals on the model parameters for the logistic regression
+model from part a.
+
+```{r }
+
+confint(mdl3, level=0.95) 
+
+```
+
+

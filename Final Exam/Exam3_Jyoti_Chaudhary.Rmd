@@ -1,0 +1,200 @@
+---
+title: "Exam3_Jyoti_Chaudhary"
+author: "Jyoti Chaudhary"
+date: "May 7, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(MASS)
+library(MKmisc)
+library(ResourceSelection)
+library(car)
+library(gdata)
+
+```
+
+# Problem 1
+
+a)
+
+```{r }
+data1 <- read.csv(paste(getwd(),"/Test_S18_Data.csv",sep = ""),header=T)
+
+mdl1= glm ( data1$Owner ~ data1$Income, data = data1, family = binomial)
+
+summary(mdl1) ##### PARAMETER ESTIMATES 
+
+# The coefficients obtained are:
+
+mdl1$coefficients
+
+
+```
+
+The fitted model is:
+
+$$\hat {y} = \hat {\pi} = \frac {1}{1+e^{-(-6.2289 + 0.1319x)}} = \frac {1}{1+e^{6.2289 - 0.1319x}}$$ 
+where x = Income
+
+If the model is good at 5% level?
+
+```{r }
+
+anova(mdl1, test="Chisq")
+
+hoslem.test(data1$Owner, fitted(mdl1), g=8) 
+
+vcov(mdl1)
+
+# Test of model significance
+0.1319/sqrt(0.003687)
+(0.1319/sqrt(0.003687))^2
+qchisq(.95,df = 1)
+
+
+
+```
+
+Null deviance= 26.921 Residual deviance= 17.634, it shows a significant improvement over null model. As D/df = 0.98 which is close to 1.00, this indicates that the model is adequate and good fit for the data. Also, the p-value (=0.002308) is very low which further indicates that model is adequate.
+
+We can also do HL-test to test goodness of fit which shows Chi-square = 3.4905 with 6 degrees of freedom and p-value
+=  0.7452. Hence it is good fit to the data.
+
+Also, as (0.1319/sqrt(0.003687))^2 > qchisq(.95,df = 1), the model is adequate and significant.
+
+# b)
+Find and interpret the odds ratio for "Income".
+
+```{r }
+OR=exp(coef(mdl1)[2])
+OR
+```
+
+This odds ratio implies that for every unit increase in speed, the odds of hitting the target decrease by 1.75%.
+
+Using odds ratio we can say that for every 1 unit increase of income, the odds of owning the device increase by 100x(1.141101 - 1) = 14.1%.
+
+
+# c)
+Predict the probability of ownership if income is $40,000. Also nd a 98% condence interval for the true probability.
+
+```{r }
+
+nwdt=with(data1, data.frame(Income=40.0)) ##### NEW DATA POINT
+nwdt
+
+pct=0.98
+
+nwdt2=subset(cbind(nwdt,predict(mdl1,newdata=nwdt, type="link", se=TRUE)),select = -c(residual.scale))
+nwdt2
+
+nwdt3=within(nwdt2,{PredictedProb <- plogis(fit)
+LL <- plogis(fit - (qnorm((1+pct)/2) * se.fit))
+UL <- plogis(fit + (qnorm((1+pct)/2) * se.fit))})
+nwdt3
+
+
+```
+
+
+#d) 
+
+```{r }
+
+data1$Income2 <- data1$Income^2
+mdl2= glm ( data1$Owner ~ data1$Income + data1$Income2 , data = data1, family = binomial)
+
+
+summary(mdl2) ##### PARAMETER ESTIMATES 
+
+anova(mdl2, test="Chisq")
+
+```
+
+The deviance has NOT significantly reduced due to quadratic term with a high p-value of 0.474182. Hence its evident that the interaction term is not required in the model. 
+
+To test Beta3 = 0 vs Beta3 not = 0,
+Difference in Deviance = 17.634 - 17.121 =0.513 which is lesser than chi-square(0.1,1) = 2.706. Hence the quadratic term is not significant at 10% level.
+
+
+#Problem 3
+
+a)
+
+```{r }
+
+data2 <- read.csv(paste(getwd(),"/Test_S18_Data_2.csv",sep = ""),header=T)
+
+# fitting linear regression data
+
+mod3 = lm(Yt ~ t , data = data2)
+
+# plotting residuals against time
+
+plot(data2$t, mod3$res, ylab="Residuals", xlab="time", main="Residual Plot over Time - Model-1", type="o") 
+abline(0, 0)   
+
+# the plot indicates positive autocorrelation
+
+
+# Dubin watson test to determine correlation
+
+library(car)
+
+durbinWatsonTest(mod3, max.lag=1, simulate=TRUE, reps=10000, method="normal", alternative="positive")
+
+```
+
+n = 20, k = 1, dw = 0.308722, alpha = 0.05, dL = 1.201, dU = 1.411
+As dw < dL , reject H0, which means there is evidence to support the conclusion that the residuals are positively autocorrelated.
+
+
+
+# b)
+
+cochrane orcutt method
+
+
+```{r }
+
+##### CALCULATING RHOHAT USING FORMULA ############
+
+res3=resid(mod3)
+n= length(res3)
+rho = sum(res3[1:(n-1)]*res3[2:n])/sum(res3^2)
+rho
+
+
+library(DataCombine)
+
+data3=slide(data=data2, Var="Yt", TimeVar="t",  NewVar="Yt_1", slideBy = -1,
+           keepInvalid = FALSE, reminder = TRUE)
+
+pst2=slide(data=data3, Var="t", TimeVar="t",  NewVar="t_1", slideBy = -1,
+           keepInvalid = FALSE, reminder = TRUE)
+
+pst2
+
+pst2$yprime= pst2$Yt - rho*pst2$Yt_1
+pst2$xprime= pst2$t - rho*pst2$t_1
+
+pst2
+
+mod5 = lm(yprime ~ xprime , data = pst2)
+mod5
+summary(mod5)
+
+dw2=durbinWatsonTest(lm(yprime ~ xprime,data = pst2) , max.lag=1, alternative="positive")
+dw2
+
+```
+
+
+n = 19, k = 1, dw = 1.778269, alpha = 0.05, dL = 1.180, dU = 1.401
+
+As dw > dU , which means that there is no auto-correlation present among errors. So we conclude that there is no problem with autocorrelated errors in the transformed model. The CochraneOrcutt method has been effective in removing the autocorrelation.
+
+
